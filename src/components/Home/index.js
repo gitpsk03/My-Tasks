@@ -1,7 +1,5 @@
 import {Component} from 'react'
 import {v4} from 'uuid'
-import {RiDeleteBin6Line} from 'react-icons/ri'
-import {MdEdit} from 'react-icons/md'
 import {
   MainContainer,
   CreateTaskDiv,
@@ -10,140 +8,138 @@ import {
   LabelInputDiv,
   Label,
   Input,
+  SelectInput,
+  OptionInput,
   FormBtn,
   AddTaskDiv,
   MainHeading,
+  TagListUl,
+  TagList,
+  TagBtn,
   TaskUl,
   TaskListLi,
   TaskText,
+  TaskTag,
   NoTaskText,
 } from './styledComponents'
 
-const statusList = [
-  {text: 'DONE'},
-  {text: 'PENDING'},
-  {text: 'IN PROGRESS'},
-  {text: 'COMPLETED'},
+const tagsList = [
+  {
+    optionId: 'HEALTH',
+    displayText: 'Health',
+  },
+  {
+    optionId: 'EDUCATION',
+    displayText: 'Education',
+  },
+  {
+    optionId: 'ENTERTAINMENT',
+    displayText: 'Entertainment',
+  },
+  {
+    optionId: 'SPORTS',
+    displayText: 'Sports',
+  },
+  {
+    optionId: 'TRAVEL',
+    displayText: 'Travel',
+  },
+  {
+    optionId: 'OTHERS',
+    displayText: 'Others',
+  },
 ]
 
 class Home extends Component {
   state = {
     inputText: '',
+    inputTag: tagsList[0].optionId,
     taskList: [],
-    editActive: false,
-    activeId: '',
+    activeTag: 'INITIAL',
   }
 
   changeInput = event => {
     this.setState({inputText: event.target.value})
   }
 
+  onChangeTag = event => {
+    this.setState({inputTag: event.target.value})
+  }
+
   submitForm = event => {
     event.preventDefault()
-    const {inputText} = this.state
+    const {inputText, inputTag} = this.state
     const newTask = {
       id: v4(),
       task: inputText,
+      tag: inputTag,
     }
-
     if (inputText.length !== 0) {
       this.setState(prevState => ({
         taskList: [...prevState.taskList, newTask],
         inputText: '',
+        inputTag: '',
       }))
     }
   }
 
-  editedSubmitForm = event => {
-    event.preventDefault()
-    const {inputText, activeId} = this.state
+  onClickActiveTag = event => {
     this.setState(prevState => ({
-      taskList: prevState.taskList.map(each => {
-        if (each.id === activeId) {
-          return {...each, task: inputText}
-        }
-        return each
-      }),
-      inputText: '',
-      editActive: false,
-      activeId: '',
+      activeTag:
+        prevState.activeTag === event.target.value
+          ? 'INITIAL'
+          : event.target.value,
     }))
   }
 
   renderCreateTaskView = () => {
-    const {inputText, editActive} = this.state
+    const {inputText, inputTag} = this.state
     return (
       <CreateTaskDiv>
-        {editActive ? (
-          <CreateForm onSubmit={this.editedSubmitForm}>
-            <FormHeading>TODO</FormHeading>
-            <LabelInputDiv>
-              <Label htmlFor="inputText">Task</Label>
-              <Input
-                type="text"
-                placeholder="Enter the task here"
-                onChange={this.changeInput}
-                value={inputText}
-                id="inputText"
-              />
-            </LabelInputDiv>
-            <FormBtn type="submit">Ok</FormBtn>
-          </CreateForm>
-        ) : (
-          <CreateForm onSubmit={this.submitForm}>
-            <FormHeading>TODO</FormHeading>
-            <LabelInputDiv>
-              <Label htmlFor="inputText">Task</Label>
-              <Input
-                type="text"
-                placeholder="Enter the task here"
-                onChange={this.changeInput}
-                value={inputText}
-                id="inputText"
-              />
-            </LabelInputDiv>
-            <FormBtn type="submit">Add Task</FormBtn>
-          </CreateForm>
-        )}
+        <CreateForm onSubmit={this.submitForm}>
+          <FormHeading>Create a task!</FormHeading>
+          <LabelInputDiv>
+            <Label htmlFor="inputText">Task</Label>
+            <Input
+              type="text"
+              placeholder="Enter the task here"
+              onChange={this.changeInput}
+              value={inputText}
+              id="inputText"
+            />
+          </LabelInputDiv>
+          <LabelInputDiv>
+            <Label htmlFor="selectTag">Tags</Label>
+            <SelectInput
+              onChange={this.onChangeTag}
+              value={inputTag}
+              id="selectTag"
+            >
+              {tagsList.map(each => (
+                <OptionInput value={each.optionId} key={each.optionId}>
+                  {each.displayText}
+                </OptionInput>
+              ))}
+            </SelectInput>
+          </LabelInputDiv>
+          <FormBtn type="submit">Add Task</FormBtn>
+        </CreateForm>
       </CreateTaskDiv>
     )
   }
 
   renderTaskCard = () => {
-    const {taskList} = this.state
-    const onDeleteTodo = each => {
-      const filteredTaskList = taskList.filter(item => item !== each)
-      this.setState({
-        taskList: filteredTaskList,
-        inputText: '',
-        editActive: false,
-        activeId: '',
-      })
-    }
-    const onClickEdit = each => {
-      this.setState({
-        editActive: true,
-        activeId: each.id,
-        inputText: each.task,
-      })
-    }
-
+    const {taskList, activeTag} = this.state
+    const filterTaskList =
+      activeTag === 'INITIAL'
+        ? taskList
+        : taskList.filter(each => each.tag === activeTag)
     return (
       <>
-        {taskList.map(each => (
+        {filterTaskList.map(each => (
           <TaskListLi key={each.id}>
             <TaskText>{each.task}</TaskText>
-            <button type="button" onClick={() => onDeleteTodo(each)}>
-              <RiDeleteBin6Line />
-            </button>
-            <button type="button" onClick={() => onClickEdit(each)}>
-              <MdEdit />
-            </button>
-            <select>
-              {statusList.map(eachStatus => (
-                <option>{eachStatus.text}</option>
-              ))}
-            </select>
+            <TaskTag>{each.tag}</TaskTag>
           </TaskListLi>
         ))}
       </>
@@ -151,10 +147,28 @@ class Home extends Component {
   }
 
   renderAddTaskView = () => {
-    const {taskList} = this.state
+    const {taskList, activeTag} = this.state
 
     return (
       <AddTaskDiv>
+        <MainHeading>Tags</MainHeading>
+        <TagListUl>
+          {tagsList.map(each => {
+            const isActive = activeTag === each.optionId
+            return (
+              <TagList key={each.optionId}>
+                <TagBtn
+                  type="button"
+                  value={each.optionId}
+                  onClick={this.onClickActiveTag}
+                  isActive={isActive}
+                >
+                  {each.displayText}
+                </TagBtn>
+              </TagList>
+            )
+          })}
+        </TagListUl>
         <MainHeading>Tasks</MainHeading>
         <TaskUl>
           {taskList.length === 0 ? (
